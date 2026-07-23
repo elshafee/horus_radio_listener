@@ -558,6 +558,18 @@
   var lastProgressTime = Date.now();
   var lastPlaybackTime = -1;
 
+  // MSE streaming state (used to silently attach the ngrok bypass header)
+  var mediaSource = null;
+  var sourceBuffer = null;
+  var streamAbort = null;
+  var pendingChunks = [];
+  var trimInterval = null;
+  var usingDirectFallback = false;
+
+  function mseAvailable(){
+    return !!(window.MediaSource && window.fetch && MediaSource.isTypeSupported('audio/mpeg'));
+  }
+
   function setBodyState(state){
     document.body.classList.remove('playing','connecting');
     if(state) document.body.classList.add(state);
@@ -581,6 +593,19 @@
   function clearTimers(){
     if(retryTimer){ clearTimeout(retryTimer); retryTimer = null; }
     if(stallTimer){ clearInterval(stallTimer); stallTimer = null; }
+    if(trimInterval){ clearInterval(trimInterval); trimInterval = null; }
+  }
+
+  function cleanupStream(){
+    if(streamAbort){ try{ streamAbort.abort(); }catch(e){} streamAbort = null; }
+    pendingChunks = [];
+    sourceBuffer = null;
+    if(mediaSource){
+      try{
+        if(mediaSource.readyState === 'open') mediaSource.endOfStream();
+      }catch(e){}
+      mediaSource = null;
+    }
   }
 
   function startStallWatchdog(){
@@ -602,6 +627,100 @@
     }, 1000);
   }
 
+  // Trim old buffered audio so a long-running live session doesn't grow memory forever
+  function startBufferTrim(){
+    clearInterval(trimInterval);
+    trimInterval = setInterval(function(){
+      if(!sourceBuffer || sourceBuffer.updating) return;
+      var keepBehind = 30; // seconds
+      if(sourceBuffer.buffered.length && audio.currentTime > keepBehind){
+        var removeEnd = audio.currentTime - keepBehind;
+        try{ sourceBuffer.remove(0, removeEnd); }catch(e){}
+      }
+    }, 15000);
+  }
+
+  function processQueue(){
+    if(!sourceBuffer || sourceBuffer.updating || pendingChunks.length === 0) return;
+    var chunk = pendingChunks.shift();
+    try{
+      sourceBuffer.appendBuffer(chunk);
+    }catch(e){
+      // quota/decoding hiccup — drop this chunk and keep going
+      processQueue();
+    }
+  }
+
+  function pumpReader(reader){
+    reader.read().then(function(res){
+      if(res.done) return;
+      pendingChunks.push(res.value);
+      processQueue();
+      pumpReader(reader);
+    }).catch(function(){
+      if(userWantsPlaying) handleDrop('Stream read error');
+    });
+  }
+
+  // Connects by fetching the stream ourselves so we can silently attach the
+  // ngrok-skip-browser-warning header (does the same job as clicking "Visit Site",
+  // just automatically, on every request, for every listener).
+  function connectViaStream(){
+    usingDirectFallback = false;
+    cleanupStream();
+    streamAbort = (window.AbortController) ? new AbortController() : null;
+
+    mediaSource = new MediaSource();
+    audio.src = URL.createObjectURL(mediaSource);
+
+    mediaSource.addEventListener('sourceopen', function onOpen(){
+      mediaSource.removeEventListener('sourceopen', onOpen);
+      try{
+        sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg');
+      }catch(e){
+        connectViaDirect();
+        return;
+      }
+      sourceBuffer.addEventListener('updateend', processQueue);
+
+      fetch(buildUrl(), {
+        headers: { 'ngrok-skip-browser-warning': 'true' },
+        signal: streamAbort ? streamAbort.signal : undefined
+      }).then(function(response){
+        if(!response.ok || !response.body){ throw new Error('bad-response'); }
+        var contentType = response.headers.get('content-type') || '';
+        if(contentType.indexOf('text/html') !== -1){
+          // Got an interstitial/HTML page instead of audio — fall back.
+          throw new Error('interstitial');
+        }
+        pumpReader(response.body.getReader());
+        startBufferTrim();
+        var p = audio.play();
+        if(p && p.catch){ p.catch(function(){ /* watchdog will catch true failures */ }); }
+      }).catch(function(){
+        // Likely a CORS restriction from the tunnel/server — fall back to a
+        // plain stream request (still works once a listener's browser has
+        // the ngrok bypass cookie from an earlier visit).
+        connectViaDirect();
+      });
+    });
+
+    mediaSource.addEventListener('error', function(){
+      connectViaDirect();
+    });
+  }
+
+  function connectViaDirect(){
+    usingDirectFallback = true;
+    cleanupStream();
+    audio.src = buildUrl();
+    audio.load();
+    var playPromise = audio.play();
+    if(playPromise && playPromise.catch){
+      playPromise.catch(function(){ handleDrop('Playback blocked'); });
+    }
+  }
+
   function connect(){
     clearTimers();
     setBodyState('connecting');
@@ -609,15 +728,11 @@
     reconnectBtn.classList.add('spinning');
 
     audio.pause();
-    audio.src = buildUrl();
-    audio.load();
 
-    var playPromise = audio.play();
-    if(playPromise && playPromise.catch){
-      playPromise.catch(function(err){
-        // Autoplay/user-gesture or network errors land here
-        handleDrop('Playback blocked');
-      });
+    if(mseAvailable()){
+      connectViaStream();
+    } else {
+      connectViaDirect();
     }
   }
 
@@ -630,6 +745,7 @@
   }
 
   function handleDrop(reason){
+    cleanupStream();
     setBodyState('');
     reconnectBtn.classList.remove('spinning');
     if(userWantsPlaying){
@@ -672,6 +788,7 @@
     if(userWantsPlaying){
       userWantsPlaying = false;
       clearTimers();
+      cleanupStream();
       audio.pause();
       setBodyState('');
       playBtn.setAttribute('aria-pressed','false');
