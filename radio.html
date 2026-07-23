@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Horus Radio — Live Stream</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap"
+    rel="stylesheet">
+  <style>
+    /* ============ DESIGN TOKENS ============ */
+    :root {
+      --navy-950: #070f22;
+      --navy-900: #0c1a36;
+      --navy-800: #132a52;
+      --navy-700: #1c3a6e;
+      --blue-600: #2b5a9e;
+      --gold-500: #e3b23c;
+      --gold-400: #eec564;
+      --gold-300: #f5d989;
+      --sand-100: #f4ecd9;
+      --white: #ffffff;
+      --danger: #e2664f;
+      --ok: #7fd694;
+
+      --font-display: 'Cinzel', serif;
+      --font-body: 'Manrope', sans-serif;
+      --font-mono: 'Space Mono', monospace;
+
+      --radius-lg: 22px;
+      --radius-md: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      background:
+        radial-gradient(1200px 700px at 50% -10%, #16305f 0%, var(--navy-900) 45%, var(--navy-950) 100%);
+      color: var(--sand-100);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* ============ AMBIENT BACKGROUND ============ */
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(227, 178, 60, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(227, 178, 60, 0.045) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 20%, black 10%, transparent 75%);
+    }
+
+    .bg-glow {
+      position: fixed;
+      z-index: 0;
+      pointer-events: none;
+      border-radius: 50%;
+      filter: blur(90px);
+      opacity: .35;
+    }
+
+    .bg-glow.g1 {
+      width: 520px;
+      height: 520px;
+      top: -160px;
+      left: -120px;
+      background: var(--blue-600);
+      animation: drift1 22s ease-in-out infinite;
+    }
+
+    .bg-glow.g2 {
+      width: 460px;
+      height: 460px;
+      bottom: -180px;
+      right: -140px;
+      background: var(--gold-500);
+      opacity: .18;
+      animation: drift2 26s ease-in-out infinite;
+    }
+
+    @keyframes drift1 {
+
+      0%,
+      100% {
+        transform: translate(0, 0);
+      }
+
+      50% {
+        transform: translate(40px, 60px);
+      }
+    }
+
+    @keyframes drift2 {
+
+      0%,
+      100% {
+        transform: translate(0, 0);
+      }
+
+      50% {
+        transform: translate(-50px, -30px);
+      }
+    }
+
+    .stars {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .star {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      border-radius: 50%;
+      background: var(--gold-300);
+      opacity: .5;
+      animation: twinkle 4s ease-in-out infinite;
+    }
+
+    @keyframes twinkle {
+
+      0%,
+      100% {
+        opacity: .15;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: .8;
+        transform: scale(1.6);
+      }
+    }
+
+    /* ============ LAYOUT SHELL ============ */
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    /* ============ NAV ============ */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 26px 0 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+    }
+
+    .brand-name {
+      font-family: var(--font-display);
+      font-weight: 700;
+      letter-spacing: 2px;
+      font-size: 19px;
+      color: var(--sand-100);
+    }
+
+    .brand-name small {
+      display: block;
+      font-family: var(--font-mono);
+      font-weight: 400;
+      letter-spacing: 3px;
+      font-size: 9px;
+      color: var(--gold-400);
+      margin-top: 2px;
+    }
+
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(227, 178, 60, 0.08);
+      border: 1px solid rgba(227, 178, 60, 0.35);
+      padding: 8px 14px;
+      border-radius: 100px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--gold-300);
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--danger);
+      box-shadow: 0 0 0 0 rgba(226, 102, 79, .6);
+      animation: pulseDot 1.6s ease-out infinite;
+    }
+
+    .live-dot.ok {
+      background: var(--ok);
+      box-shadow: 0 0 0 0 rgba(127, 214, 148, .6);
+    }
+
+    .live-dot.idle {
+      background: #8a94ab;
+      animation: none;
+      box-shadow: none;
+    }
+
+    @keyframes pulseDot {
+      0% {
+        box-shadow: 0 0 0 0 rgba(226, 102, 79, .55);
+      }
+
+      70% {
+        box-shadow: 0 0 0 9px rgba(226, 102, 79, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(226, 102, 79, 0);
+      }
+    }
+
+    /* ============ HERO ============ */
+    .hero {
+      text-align: center;
+      padding: 42px 0 10px;
+    }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 5px;
+      color: var(--gold-400);
+      text-transform: uppercase;
+      opacity: .85;
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(34px, 6vw, 58px);
+      letter-spacing: 2px;
+      margin: 14px 0 8px;
+      background: linear-gradient(180deg, var(--sand-100) 20%, var(--gold-300) 120%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .tagline {
+      color: #aebbd6;
+      font-size: 15px;
+      max-width: 460px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ============ PYRAMID PLAYER ============ */
+    .player-stage {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 52px 0 30px;
+    }
+
+    .rings {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ring {
+      position: absolute;
+      border: 1px solid rgba(227, 178, 60, 0.35);
+      border-radius: 50%;
+      opacity: 0;
+    }
+
+    .ring.r1 {
+      width: 120%;
+      height: 120%;
+    }
+
+    .ring.r2 {
+      width: 145%;
+      height: 145%;
+    }
+
+    .ring.r3 {
+      width: 170%;
+      height: 170%;
+    }
+
+    body.playing .ring {
+      animation: ringPulse 3s ease-out infinite;
+    }
+
+    body.playing .ring.r2 {
+      animation-delay: .6s;
+    }
+
+    body.playing .ring.r3 {
+      animation-delay: 1.2s;
+    }
+
+    @keyframes ringPulse {
+      0% {
+        transform: scale(.75);
+        opacity: 0;
+      }
+
+      15% {
+        opacity: .65;
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 0;
+      }
+    }
+
+    .pyramid-btn {
+      position: relative;
+      width: 190px;
+      height: 190px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      outline-offset: 6px;
+    }
+
+    .pyramid-btn svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      overflow: visible;
+    }
+
+    .pyramid-face {
+      fill: url(#pyramidFill);
+      stroke: var(--gold-400);
+      stroke-width: 1.4;
+      transition: filter .35s ease, transform .35s ease;
+      filter: drop-shadow(0 10px 30px rgba(227, 178, 60, .15));
+    }
+
+    .pyramid-btn:hover .pyramid-face {
+      filter: drop-shadow(0 14px 40px rgba(227, 178, 60, .35));
+    }
+
+    .pyramid-btn:active .pyramid-face {
+      transform: scale(.97);
+      transform-origin: center;
+    }
+
+    .trace {
+      fill: none;
+      stroke: var(--gold-300);
+      stroke-width: 2;
+      stroke-dasharray: 520;
+      stroke-dashoffset: 520;
+    }
+
+    body.connecting .trace {
+      animation: traceLoad 1.6s linear infinite;
+    }
+
+    body.playing .trace {
+      stroke-dashoffset: 0;
+      opacity: .55;
+      transition: stroke-dashoffset 1s ease;
+    }
+
+    @keyframes traceLoad {
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    .icon-play,
+    .icon-pause {
+      transition: opacity .2s ease, transform .2s ease;
+    }
+
+    body.playing .icon-play {
+      opacity: 0;
+      transform: scale(.7);
+    }
+
+    body:not(.playing) .icon-play {
+      opacity: 1;
+    }
+
+    body:not(.playing) .icon-pause {
+      opacity: 0;
+      transform: scale(.7);
+    }
+
+    body.playing .icon-pause {
+      opacity: 1;
+    }
+
+    .state-label {
+      margin-top: 18px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 3px;
+      color: #9fb0ce;
+      text-transform: uppercase;
+    }
+
+    .state-label.gold {
+      color: var(--gold-400);
+    }
+
+    .state-label.err {
+      color: var(--danger);
+    }
+
+    /* ============ NOW PLAYING ============ */
+    .now-playing {
+      max-width: 520px;
+      margin: 26px auto 0;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(227, 178, 60, 0.18);
+      border-radius: var(--radius-md);
+      padding: 16px 22px;
+      backdrop-filter: blur(6px);
+    }
+
+    .np-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--gold-400);
+    }
+
+    .np-track {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--sand-100);
+      margin-top: 6px;
+      overflow: hidden;
+      white-space: nowrap;
+      position: relative;
+    }
+
+    .np-track span {
+      display: inline-block;
+      padding-left: 0;
+    }
+
+    /* equalizer */
+    .eq {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 4px;
+      height: 26px;
+      margin-top: 12px;
+    }
+
+    .eq i {
+      width: 3px;
+      background: var(--gold-500);
+      border-radius: 2px;
+      height: 4px;
+      opacity: .55;
+    }
+
+    body.playing .eq i {
+      animation: eqBounce 900ms ease-in-out infinite;
+      opacity: 1;
+    }
+
+    .eq i:nth-child(1) {
+      animation-duration: 820ms;
+    }
+
+    .eq i:nth-child(2) {
+      animation-duration: 640ms;
+    }
+
+    .eq i:nth-child(3) {
+      animation-duration: 900ms;
+    }
+
+    .eq i:nth-child(4) {
+      animation-duration: 560ms;
+    }
+
+    .eq i:nth-child(5) {
+      animation-duration: 760ms;
+    }
+
+    .eq i:nth-child(6) {
+      animation-duration: 1000ms;
+    }
+
+    .eq i:nth-child(7) {
+      animation-duration: 680ms;
+    }
+
+    @keyframes eqBounce {
+
+      0%,
+      100% {
+        height: 4px;
+      }
+
+      50% {
+        height: 24px;
+      }
+    }
+
+    /* ============ CONTROL PANEL ============ */
+    .panel {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin: 44px 0 0;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.015));
+      border: 1px solid rgba(227, 178, 60, 0.14);
+      border-radius: var(--radius-lg);
+      padding: 22px 26px;
+    }
+
+    .panel-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .vol-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: #9fb0ce;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 140px;
+      height: 4px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.12);
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--gold-400);
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(227, 178, 60, .6);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--gold-400);
+      border: none;
+      box-shadow: 0 0 8px rgba(227, 178, 60, .6);
+    }
+
+    .status-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 1px;
+      color: #c8d3e8;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #8a94ab;
+    }
+
+    .status-dot.ok {
+      background: var(--ok);
+      box-shadow: 0 0 8px rgba(127, 214, 148, .7);
+    }
+
+    .status-dot.warn {
+      background: var(--gold-400);
+      box-shadow: 0 0 8px rgba(227, 178, 60, .7);
+      animation: blink 1s infinite;
+    }
+
+    .status-dot.err {
+      background: var(--danger);
+      box-shadow: 0 0 8px rgba(226, 102, 79, .7);
+    }
+
+    @keyframes blink {
+      50% {
+        opacity: .3;
+      }
+    }
+
+    .reconnect-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(227, 178, 60, 0.1);
+      color: var(--gold-300);
+      border: 1px solid rgba(227, 178, 60, 0.4);
+      border-radius: 100px;
+      padding: 9px 16px;
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 12.5px;
+      cursor: pointer;
+      transition: background .2s ease, transform .2s ease;
+    }
+
+    .reconnect-btn:hover {
+      background: rgba(227, 178, 60, 0.2);
+    }
+
+    .reconnect-btn:active {
+      transform: scale(.96);
+    }
+
+    .reconnect-btn svg {
+      width: 14px;
+      height: 14px;
+      transition: transform .5s ease;
+    }
+
+    .reconnect-btn.spinning svg {
+      animation: spin 900ms linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .auto-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #9fb0ce;
+      font-family: var(--font-mono);
+    }
+
+    .switch {
+      position: relative;
+      width: 34px;
+      height: 19px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: .25s;
+    }
+
+    .slider::before {
+      content: "";
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      left: 2.5px;
+      top: 2.5px;
+      background: #dfe6f2;
+      border-radius: 50%;
+      transition: .25s;
+    }
+
+    .switch input:checked+.slider {
+      background: var(--gold-500);
+    }
+
+    .switch input:checked+.slider::before {
+      transform: translateX(15px);
+      background: var(--navy-950);
+    }
+
+    /* ============ INFO STRIP ============ */
+    .strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 22px;
+    }
+
+    .strip .card {
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid rgba(227, 178, 60, 0.1);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+    }
+
+    .strip .card h4 {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--gold-400);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .strip .card p {
+      font-size: 13px;
+      color: #c8d3e8;
+      line-height: 1.5;
+    }
+
+    /* ============ FOOTER ============ */
+    footer {
+      margin-top: 64px;
+      padding-top: 26px;
+      border-top: 1px solid rgba(227, 178, 60, 0.12);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .foot-links {
+      display: flex;
+      gap: 22px;
+    }
+
+    .foot-links a {
+      color: #9fb0ce;
+      text-decoration: none;
+      font-size: 13px;
+      transition: color .2s;
+    }
+
+    .foot-links a:hover {
+      color: var(--gold-300);
+    }
+
+    .copyright {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #6b7896;
+      letter-spacing: .5px;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+    }
+
+    /* ============ SPLASH SCREEN ============ */
+    #splash {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(1100px 700px at 50% 40%, #16305f 0%, var(--navy-900) 55%, var(--navy-950) 100%);
+      transition: opacity .7s ease;
+    }
+
+    #splash .splash-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 22px;
+    }
+
+    #splash svg {
+      width: 120px;
+      height: 120px;
+      overflow: visible;
+    }
+
+    #splash .splash-pyramid {
+      fill: none;
+      stroke: var(--gold-400);
+      stroke-width: 2;
+      stroke-dasharray: 420;
+      stroke-dashoffset: 420;
+      animation: drawPyramid 1.6s cubic-bezier(.65, 0, .35, 1) forwards .15s;
+      filter: drop-shadow(0 0 14px rgba(227, 178, 60, .35));
+    }
+
+    #splash .splash-pyramid.inner {
+      stroke: var(--sand-100);
+      stroke-width: 1;
+      opacity: 0;
+      stroke-dasharray: 180;
+      stroke-dashoffset: 180;
+      animation: drawPyramid 1s ease forwards .9s, fadeIn .4s ease forwards .9s;
+    }
+
+    @keyframes drawPyramid {
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+      }
+    }
+
+    #splash .splash-word {
+      font-family: var(--font-display);
+      font-weight: 700;
+      letter-spacing: 6px;
+      font-size: 15px;
+      color: var(--sand-100);
+      opacity: 0;
+      transform: translateY(8px);
+      animation: riseIn .6s ease forwards 1.15s;
+    }
+
+    #splash .splash-sub {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--gold-400);
+      opacity: 0;
+      transform: translateY(8px);
+      animation: riseIn .6s ease forwards 1.35s;
+    }
+
+    @keyframes riseIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    #splash .splash-bar {
+      width: 130px;
+      height: 2px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.12);
+      overflow: hidden;
+      opacity: 0;
+      animation: riseIn .5s ease forwards 1.5s;
+    }
+
+    #splash .splash-bar i {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--gold-500), var(--gold-300));
+      animation: barFill 1.4s cubic-bezier(.4, 0, .2, 1) forwards 1.6s;
+    }
+
+    @keyframes barFill {
+      to {
+        width: 100%;
+      }
+    }
+
+    /* doors-open exit */
+    #splash.leaving .splash-inner {
+      transition: opacity .35s ease;
+      opacity: 0;
+    }
+
+    #splash.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .splash-panel {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      width: 50%;
+      z-index: 9998;
+      background: var(--navy-950);
+      transition: transform .9s cubic-bezier(.76, 0, .24, 1);
+    }
+
+    .splash-panel.left {
+      left: 0;
+      border-right: 1px solid rgba(227, 178, 60, 0.12);
+    }
+
+    .splash-panel.right {
+      right: 0;
+      border-left: 1px solid rgba(227, 178, 60, 0.12);
+    }
+
+    .splash-panel.leaving-open.left {
+      transform: translateX(-100%);
+    }
+
+    .splash-panel.leaving-open.right {
+      transform: translateX(100%);
+    }
+
+    /* ============ CONTENT REVEAL ============ */
+    .reveal {
+      opacity: 0;
+      transform: translateY(18px);
+      transition: opacity .8s ease, transform .8s ease;
+    }
+
+    body.loaded .reveal {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    body.loaded nav.reveal {
+      transition-delay: .05s;
+    }
+
+    body.loaded .hero.reveal {
+      transition-delay: .18s;
+    }
+
+    body.loaded .player-stage.reveal {
+      transition-delay: .3s;
+    }
+
+    body.loaded .panel.reveal {
+      transition-delay: .42s;
+    }
+
+    body.loaded .strip.reveal {
+      transition-delay: .52s;
+    }
+
+    body.loaded footer.reveal {
+      transition-delay: .62s;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+
+    @media (max-width:640px) {
+      .strip {
+        grid-template-columns: 1fr;
+      }
+
+      .panel {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .panel-group {
+        justify-content: space-between;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="splash">
+    <div class="splash-inner">
+      <svg viewBox="0 0 200 200">
+        <polygon class="splash-pyramid" points="100,20 172,168 28,168" />
+        <polygon class="splash-pyramid inner" points="100,50 148,150 52,150" />
+      </svg>
+      <div class="splash-word">HORUS RADIO</div>
+      <div class="splash-sub">TUNING IN</div>
+      <div class="splash-bar"><i></i></div>
+    </div>
+  </div>
+  <div class="splash-panel left"></div>
+  <div class="splash-panel right"></div>
+
+  <div class="bg-grid"></div>
+  <div class="bg-glow g1"></div>
+  <div class="bg-glow g2"></div>
+  <div class="stars" id="stars"></div>
+
+  <div class="wrap">
+
+    <nav class="reveal">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 40 40" fill="none">
+          <polygon points="20,4 36,34 4,34" fill="none" stroke="#e3b23c" stroke-width="2" stroke-linejoin="round" />
+          <line x1="20" y1="4" x2="20" y2="34" stroke="#e3b23c" stroke-width="1" opacity=".5" />
+        </svg>
+        <div class="brand-name">HORUS RADIO<small>HUE CAMPUS STREAM</small></div>
+      </div>
+      <div class="live-badge">
+        <span class="live-dot idle" id="navDot"></span>
+        <span id="navLabel">OFFLINE</span>
+      </div>
+    </nav>
+
+    <section class="hero reveal">
+      <div class="eyebrow">Horus University · Egypt</div>
+      <h1>The Voice of HUE</h1>
+      <p class="tagline">Campus news, music and student voices, streaming live around the clock.</p>
+    </section>
+
+    <div class="player-stage reveal">
+      <div class="rings">
+        <div class="ring r1"></div>
+        <div class="ring r2"></div>
+        <div class="ring r3"></div>
+
+        <button class="pyramid-btn" id="playBtn" aria-pressed="false" aria-label="Play live stream">
+          <svg viewBox="0 0 200 200">
+            <defs>
+              <linearGradient id="pyramidFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#1c3a6e" />
+                <stop offset="100%" stop-color="#0c1a36" />
+              </linearGradient>
+            </defs>
+            <polygon class="pyramid-face" points="100,18 178,172 22,172" />
+            <polygon class="trace" points="100,18 178,172 22,172" />
+            <g class="icon-play" transform="translate(100,108)">
+              <polygon points="-14,-20 22,0 -14,20" fill="#f4ecd9" />
+            </g>
+            <g class="icon-pause" transform="translate(100,108)">
+              <rect x="-14" y="-20" width="10" height="40" rx="2" fill="#f4ecd9" />
+              <rect x="6" y="-20" width="10" height="40" rx="2" fill="#f4ecd9" />
+            </g>
+          </svg>
+        </button>
+      </div>
+
+      <div class="state-label" id="stateLabel">Tap to listen</div>
+
+      <div class="now-playing">
+        <div class="np-label">NOW STREAMING</div>
+        <div class="np-track" id="npTrack"><span>Horus Radio — Live Broadcast</span></div>
+        <div class="eq" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel reveal">
+      <div class="panel-group">
+        <span class="vol-label">VOL</span>
+        <input type="range" id="volume" min="0" max="100" value="80" aria-label="Volume">
+      </div>
+
+      <div class="panel-group">
+        <div class="status-chip">
+          <span class="status-dot" id="statusDot"></span>
+          <span id="statusText">Idle</span>
+        </div>
+      </div>
+
+      <div class="panel-group">
+        <div class="auto-toggle">
+          <label class="switch">
+            <input type="checkbox" id="autoReconnect" checked>
+            <span class="slider"></span>
+          </label>
+          Auto-reconnect
+        </div>
+        <button class="reconnect-btn" id="reconnectBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <path d="M21 12a9 9 0 1 1-3-6.7" />
+            <path d="M21 4v5h-5" />
+          </svg>
+          Reconnect
+        </button>
+      </div>
+    </div>
+
+    <div class="strip reveal">
+      <div class="card">
+        <h4>Stream source</h4>
+        <p>Icecast live audio, served from the campus broadcast server.</p>
+      </div>
+      <div class="card">
+        <h4>Connection</h4>
+        <p>Auto-recovers from drops and buffering with no need to reload the page.</p>
+      </div>
+      <div class="card">
+        <h4>Availability</h4>
+        <p>On air 24 hours a day, every day of the week.</p>
+      </div>
+    </div>
+
+    <footer class="reveal">
+      <div class="foot-links">
+        <a href="#">About</a>
+        <a href="#">Schedule</a>
+        <a href="#">Contact</a>
+      </div>
+      <div class="copyright">© 2026 HORUS UNIVERSITY — EGYPT</div>
+    </footer>
+
+  </div>
+
+  <audio id="audio" preload="none"></audio>
+
+  <script>
+    (function () {
+      // ============ CONFIG ============
+      var STREAM_URL = "https://reward-diet-servers-loving.trycloudflare.com/icecast/radio.mp3";
+      var STALL_TIMEOUT_MS = 20000;    // no audio progress while "playing" -> treat as stalled
+      var BASE_RETRY_DELAY_MS = 1500;  // first retry delay
+      var MAX_RETRY_DELAY_MS = 20000;  // cap for exponential backoff
+      var MAX_AUTO_RETRIES = 0;        // 0 = unlimited while autoReconnect is on
+
+      // ============ ELEMENTS ============
+      var audio = document.getElementById('audio');
+      var playBtn = document.getElementById('playBtn');
+      var stateLabel = document.getElementById('stateLabel');
+      var navDot = document.getElementById('navDot');
+      var navLabel = document.getElementById('navLabel');
+      var statusDot = document.getElementById('statusDot');
+      var statusText = document.getElementById('statusText');
+      var reconnectBtn = document.getElementById('reconnectBtn');
+      var volumeSlider = document.getElementById('volume');
+      var autoReconnectToggle = document.getElementById('autoReconnect');
+      var npTrack = document.getElementById('npTrack');
+
+      audio.volume = 0.8;
+
+      // ============ STATE ============
+      var userWantsPlaying = false;   // did the listener press play?
+      var retryCount = 0;
+      var retryTimer = null;
+      var stallTimer = null;
+      var lastProgressTime = Date.now();
+      var lastPlaybackTime = -1;
+      var isBuffering = false;
+
+      // MSE streaming state (used to silently attach the ngrok bypass header)
+      var mediaSource = null;
+      var sourceBuffer = null;
+      var streamAbort = null;
+      var pendingChunks = [];
+      var trimInterval = null;
+      var usingDirectFallback = false;
+
+      function mseAvailable() {
+        return !!(window.MediaSource && window.fetch && MediaSource.isTypeSupported('audio/mpeg'));
+      }
+
+      function setBodyState(state) {
+        document.body.classList.remove('playing', 'connecting');
+        if (state) document.body.classList.add(state);
+      }
+
+      function setStatus(kind, text, navText) {
+        statusDot.className = 'status-dot ' + kind;
+        statusText.textContent = text;
+        navDot.className = 'live-dot ' + (kind === 'ok' ? 'ok' : kind === 'err' ? '' : 'idle');
+        navLabel.textContent = navText;
+        stateLabel.textContent = text;
+        stateLabel.className = 'state-label' + (kind === 'ok' ? ' gold' : kind === 'err' ? ' err' : '');
+      }
+
+      function buildUrl() {
+        // cache-bust so a fresh reconnect doesn't reuse a dead socket
+        var sep = STREAM_URL.indexOf('?') === -1 ? '?' : '&';
+        return STREAM_URL + sep + '_=' + Date.now();
+      }
+
+      function clearTimers() {
+        if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
+        if (stallTimer) { clearInterval(stallTimer); stallTimer = null; }
+        if (trimInterval) { clearInterval(trimInterval); trimInterval = null; }
+      }
+
+      function cleanupStream() {
+        if (streamAbort) { try { streamAbort.abort(); } catch (e) { } streamAbort = null; }
+        pendingChunks = [];
+        sourceBuffer = null;
+        if (mediaSource) {
+          try {
+            if (mediaSource.readyState === 'open') mediaSource.endOfStream();
+          } catch (e) { }
+          mediaSource = null;
+        }
+      }
+
+      function startStallWatchdog() {
+        clearInterval(stallTimer);
+        lastPlaybackTime = -1;
+        lastProgressTime = Date.now();
+        stallTimer = setInterval(function () {
+          if (!userWantsPlaying) return;
+          var current = audio.currentTime;
+          if (current !== lastPlaybackTime) {
+            lastPlaybackTime = current;
+            lastProgressTime = Date.now();
+            return;
+          }
+          if (Date.now() - lastProgressTime > STALL_TIMEOUT_MS) {
+            clearInterval(stallTimer);
+            handleDrop('Stream stalled');
+          }
+        }, 1000);
+      }
+
+      // Trim old buffered audio so a long-running live session doesn't grow memory forever
+      function startBufferTrim() {
+        clearInterval(trimInterval);
+        trimInterval = setInterval(function () {
+          if (!sourceBuffer || sourceBuffer.updating) return;
+          var keepBehind = 30; // seconds
+          if (sourceBuffer.buffered.length && audio.currentTime > keepBehind) {
+            var removeEnd = audio.currentTime - keepBehind;
+            try { sourceBuffer.remove(0, removeEnd); } catch (e) { }
+          }
+        }, 15000);
+      }
+
+      function processQueue() {
+        if (!sourceBuffer || sourceBuffer.updating || pendingChunks.length === 0) return;
+        var chunk = pendingChunks.shift();
+        try {
+          sourceBuffer.appendBuffer(chunk);
+        } catch (e) {
+          // quota/decoding hiccup — drop this chunk and keep going
+          processQueue();
+        }
+      }
+
+      function pumpReader(reader) {
+        reader.read().then(function (res) {
+          if (res.done) return;
+          pendingChunks.push(res.value);
+          processQueue();
+          pumpReader(reader);
+        }).catch(function () {
+          if (userWantsPlaying) handleDrop('Stream read error');
+        });
+      }
+
+      // Connects by fetching the stream ourselves so we can silently attach the
+      // ngrok-skip-browser-warning header (does the same job as clicking "Visit Site",
+      // just automatically, on every request, for every listener).
+      function connectViaStream() {
+        usingDirectFallback = false;
+        cleanupStream();
+        streamAbort = (window.AbortController) ? new AbortController() : null;
+
+        mediaSource = new MediaSource();
+        audio.src = URL.createObjectURL(mediaSource);
+
+        mediaSource.addEventListener('sourceopen', function onOpen() {
+          mediaSource.removeEventListener('sourceopen', onOpen);
+          try {
+            sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg');
+          } catch (e) {
+            connectViaDirect();
+            return;
+          }
+          sourceBuffer.addEventListener('updateend', processQueue);
+
+          fetch(buildUrl(), {
+            headers: { 'ngrok-skip-browser-warning': 'true' },
+            signal: streamAbort ? streamAbort.signal : undefined
+          }).then(function (response) {
+            if (!response.ok || !response.body) { throw new Error('bad-response'); }
+            var contentType = response.headers.get('content-type') || '';
+            if (contentType.indexOf('text/html') !== -1) {
+              // Got an interstitial/HTML page instead of audio — fall back.
+              throw new Error('interstitial');
+            }
+            pumpReader(response.body.getReader());
+            startBufferTrim();
+            var p = audio.play();
+            if (p && p.catch) { p.catch(function () { /* watchdog will catch true failures */ }); }
+          }).catch(function () {
+            // Likely a CORS restriction from the tunnel/server — fall back to a
+            // plain stream request (still works once a listener's browser has
+            // the ngrok bypass cookie from an earlier visit).
+            connectViaDirect();
+          });
+        });
+
+        mediaSource.addEventListener('error', function () {
+          connectViaDirect();
+        });
+      }
+
+      function connectViaDirect() {
+        usingDirectFallback = true;
+        cleanupStream();
+        audio.src = buildUrl();
+        audio.load();
+        var playPromise = audio.play();
+        if (playPromise && playPromise.catch) {
+          playPromise.catch(function () { handleDrop('Playback blocked'); });
+        }
+      }
+
+      function connect() {
+        clearTimers();
+        setBodyState('connecting');
+        setStatus('warn', retryCount > 0 ? 'Reconnecting…' : 'Connecting…', retryCount > 0 ? 'RECONNECTING' : 'CONNECTING');
+        reconnectBtn.classList.add('spinning');
+
+        audio.pause();
+
+        if (mseAvailable()) {
+          connectViaStream();
+        } else {
+          connectViaDirect();
+        }
+      }
+
+      function scheduleRetry() {
+        if (!userWantsPlaying || !autoReconnectToggle.checked) return;
+        retryCount++;
+        var delay = Math.min(BASE_RETRY_DELAY_MS * Math.pow(1.7, retryCount - 1), MAX_RETRY_DELAY_MS);
+        setStatus('warn', 'Retrying in ' + Math.round(delay / 1000) + 's…', 'RECONNECTING');
+        retryTimer = setTimeout(connect, delay);
+      }
+
+      function handleDrop(reason) {
+        cleanupStream();
+        setBodyState('');
+        reconnectBtn.classList.remove('spinning');
+        if (userWantsPlaying) {
+          setStatus('err', reason || 'Connection lost', 'OFFLINE');
+          scheduleRetry();
+        } else {
+          setStatus('', 'Idle', 'OFFLINE');
+        }
+      }
+
+      // ============ AUDIO EVENTS ============
+      audio.addEventListener('playing', function () {
+        retryCount = 0;
+        isBuffering = false;
+        reconnectBtn.classList.remove('spinning');
+        setBodyState('playing');
+        setStatus('ok', 'Connected — live', 'LIVE');
+        playBtn.setAttribute('aria-pressed', 'true');
+        playBtn.setAttribute('aria-label', 'Pause live stream');
+        startStallWatchdog();
+      });
+
+      audio.addEventListener('waiting', function () {
+        setStatus('warn', 'Buffering…', 'BUFFERING');
+        // A hiccup just started — give it a fresh window before the
+        // watchdog considers this a real stall, instead of counting
+        // time that already elapsed toward the timeout.
+        isBuffering = true;
+        lastProgressTime = Date.now();
+      });
+
+      audio.addEventListener('error', function () {
+        handleDrop('Connection error');
+      });
+
+      audio.addEventListener('stalled', function () {
+        handleDrop('Stream stalled');
+      });
+
+      audio.addEventListener('ended', function () {
+        if (userWantsPlaying) handleDrop('Stream ended');
+      });
+
+      // ============ CONTROLS ============
+      playBtn.addEventListener('click', function () {
+        if (userWantsPlaying) {
+          userWantsPlaying = false;
+          clearTimers();
+          cleanupStream();
+          audio.pause();
+          setBodyState('');
+          playBtn.setAttribute('aria-pressed', 'false');
+          playBtn.setAttribute('aria-label', 'Play live stream');
+          setStatus('', 'Paused', 'OFFLINE');
+        } else {
+          userWantsPlaying = true;
+          retryCount = 0;
+          connect();
+        }
+      });
+
+      reconnectBtn.addEventListener('click', function () {
+        userWantsPlaying = true;
+        retryCount = 0;
+        connect();
+      });
+
+      volumeSlider.addEventListener('input', function () {
+        audio.volume = volumeSlider.value / 100;
+      });
+
+      // ============ DECOR: star field ============
+      var starsWrap = document.getElementById('stars');
+      for (var i = 0; i < 40; i++) {
+        var s = document.createElement('div');
+        s.className = 'star';
+        s.style.left = (Math.random() * 100) + '%';
+        s.style.top = (Math.random() * 70) + '%';
+        s.style.animationDelay = (Math.random() * 4) + 's';
+        s.style.animationDuration = (3 + Math.random() * 3) + 's';
+        starsWrap.appendChild(s);
+      }
+
+      // initial state
+      setStatus('', 'Idle', 'OFFLINE');
+
+      // ============ SPLASH SEQUENCE ============
+      var splash = document.getElementById('splash');
+      var doorLeft = document.querySelector('.splash-panel.left');
+      var doorRight = document.querySelector('.splash-panel.right');
+      var MIN_SPLASH_MS = 2200;
+      var splashStart = Date.now();
+
+      function runSplashExit() {
+        var elapsed = Date.now() - splashStart;
+        var wait = Math.max(0, MIN_SPLASH_MS - elapsed);
+        setTimeout(function () {
+          splash.classList.add('leaving');
+          splash.classList.add('hidden');
+          doorLeft.classList.add('leaving-open');
+          doorRight.classList.add('leaving-open');
+          document.body.classList.add('loaded');
+          setTimeout(function () {
+            splash.style.display = 'none';
+            doorLeft.style.display = 'none';
+            doorRight.style.display = 'none';
+          }, 950);
+        }, wait);
+      }
+
+      if (document.readyState === 'complete') {
+        runSplashExit();
+      } else {
+        window.addEventListener('load', runSplashExit);
+      }
+    })();
+  </script>
+
+</body>
+
+</html>
